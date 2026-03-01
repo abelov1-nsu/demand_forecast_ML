@@ -3,8 +3,8 @@
 Учебный проект по созданию **системы прогнозирования спроса** для розничной сети магазинов  
 с использованием **LSTM** (PyTorch) и удобным веб-интерфейсом на **Streamlit**.
 
-![demand-forecasting](https://via.placeholder.com/800x300/2c3e50/ecf0f1?text=Demand+Forecasting+LSTM)  
-*(замените на реальный скриншот интерфейса или график прогноза)*
+![demand-forecasting](<img width="1720" height="787" alt="image" src="https://github.com/user-attachments/assets/aebe3a5e-9e22-49d7-96cb-4328419d12b4" />
+(Рис. 1 - График предсказания и данные обучения)
 
 ## ✨ О проекте
 
@@ -82,4 +82,5 @@ python train.py
 
 # 5. Запустите веб-интерфейс
 python -m streamlit run app.py
+
 
