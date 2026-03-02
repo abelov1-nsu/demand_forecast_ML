@@ -11,7 +11,7 @@ st.set_page_config(page_title="Demand Forecast", layout="wide")
 st.title("📦 Demand Forecast System")
 
 # ==========================
-# Load data
+# Загрузка данных
 # ==========================
 @st.cache_data
 def load_data():
@@ -24,7 +24,7 @@ def load_data():
 df = load_data()
 
 # ==========================
-# Load model & scalers
+# Загрузка модели и скейлеров
 # ==========================
 MODEL_FEATURES = [
     'sales', 'price', 'discounted_price', 'promotion',
@@ -57,7 +57,7 @@ def load_model_and_scalers():
 model, scaler_sales, scaler_features = load_model_and_scalers()
 
 # ==========================
-# Product selection
+# Выбор товара 
 # ==========================
 product_list = df[['id','name']].drop_duplicates()
 product_list['display'] = product_list['id'] + " — " + product_list['name']
@@ -66,7 +66,7 @@ selected_id = selected_display.split(" — ")[0]
 product_df = df[df['id'] == selected_id].copy()
 
 # ==========================
-# Historical sales plot
+# Исторические продажи 📈
 # ==========================
 st.subheader("📈 Исторические продажи")
 fig1, ax1 = plt.subplots(figsize=(10,4))
@@ -77,16 +77,15 @@ ax1.set_ylabel("Количество")
 st.pyplot(fig1)
 
 # ==========================
-# Prepare features for forecast
+# 🤖 Прогноз
 # ==========================
 st.subheader("🤖 Прогноз")
-forecast_days = st.slider("Дней вперёд", 7, 60, 30)
+forecast_days = st.slider("Дней вперёд", 7, 120, 30)
 
 product_df['day_of_year'] = product_df['date'].dt.dayofyear
 product_df['sin_day'] = np.sin(2*np.pi*product_df['day_of_year']/365)
 product_df['cos_day'] = np.cos(2*np.pi*product_df['day_of_year']/365)
 
-# Scale numeric features
 scaled = product_df.copy()
 scaled[NUMERIC_FEATURES] = scaler_features.transform(scaled[NUMERIC_FEATURES])
 history = scaled[MODEL_FEATURES].values[-SEQ_LEN:]
@@ -96,7 +95,7 @@ last_date = product_df['date'].max()
 future_preds = []
 
 # ==========================
-# Forecast loop
+# Прогнозирование в будущем
 # ==========================
 for i in range(forecast_days):
     input_tensor = torch.tensor(current_seq[np.newaxis, :, :], dtype=torch.float32)
@@ -108,10 +107,9 @@ for i in range(forecast_days):
     real_pred = scaler_sales.inverse_transform(dummy)[0,0]
     future_preds.append(real_pred)
 
-    # Roll sequence forward
+    # Обновляем последовательность для следующего шага
     new_row = current_seq[-1].copy()
     new_row[0] = pred_scaled
-    # Advance day_of_year for sin/cos
     day_of_year = (int(product_df['day_of_year'].iloc[-1]) + i + 1) % 365
     new_row[-2] = np.sin(2*np.pi*day_of_year/365)
     new_row[-1] = np.cos(2*np.pi*day_of_year/365)
@@ -120,7 +118,7 @@ for i in range(forecast_days):
 future_dates = [last_date + timedelta(days=i+1) for i in range(len(future_preds))]
 
 # ==========================
-# Forecast plot
+# График прогноза
 # ==========================
 fig2, ax2 = plt.subplots(figsize=(10,4))
 ax2.plot(product_df['date'], product_df['sales'], label="История")
@@ -133,7 +131,7 @@ ax2.legend()
 st.pyplot(fig2)
 
 # ==========================
-# Recommended order
+# 📦 Рекомендованный объём закупки
 # ==========================
 st.subheader("📦 Рекомендованный объём закупки")
 safety_coef = st.slider("Коэффициент запаса", 1.0, 2.0, 1.2)
@@ -141,7 +139,7 @@ recommended = int(np.sum(future_preds) * safety_coef) if future_preds else 0
 st.metric("Закупить на период", recommended)
 
 # ==========================
-# Additional stats
+# 📊 Статистика по товару
 # ==========================
 st.subheader("📊 Статистика по товару")
 col1, col2, col3 = st.columns(3)

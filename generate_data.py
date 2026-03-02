@@ -36,20 +36,28 @@ def generate_sales_for_product(product, days=360, max_outliers=5):
     base_demand = 50
     dates = pd.date_range(datetime.today() - timedelta(days=days), periods=days)
 
-    # случайная сезонность для товара
+    # Сезонность: месячная с некоторой случайной амплитудой и фазой
     season_amp = np.random.uniform(0.2, 0.5)
     season_phase = np.random.uniform(0, 2*np.pi)
     seasonality = 1 + season_amp * np.sin(2*np.pi*np.arange(days)/30 + season_phase)
 
-    # коррекция по характеристикам товара
+    # Небольшой тренд роста
+    trend = 1 + 0.0005 * np.arange(days)
+
+    # Влияние характеристик товара на спрос
     size_factor = 1 / product['size']
     weight_factor = 1 / (product['weight']/1000)
     pack_factor = 1 / product['items_in_pack']
     promo_factor = 1 + 0.2 * product['promotion']
 
-    # основной тренд с шумом
-    sales = base_demand * seasonality * size_factor * weight_factor * pack_factor * promo_factor
-    sales = np.round(sales + np.random.normal(0, 3, days)).astype(int)
+    price_diff = product['price'] - product['discounted_price']
+    price_factor = 1 + 0.02 * price_diff
+
+    sales = base_demand * seasonality * trend * size_factor * weight_factor * pack_factor * promo_factor * price_factor
+    sales = sales + np.random.normal(0, 3, days)
+
+    sales = np.round(sales).astype(int)
+    sales = np.maximum(sales, 0)
 
     df = pd.DataFrame({
         'id': product['id'],
@@ -68,7 +76,7 @@ def generate_sales_for_product(product, days=360, max_outliers=5):
     num_outliers = np.random.randint(0, max_outliers+1)
     if num_outliers > 0:
         outlier_days = np.random.choice(days, num_outliers, replace=False)
-        multipliers = np.random.uniform(1.5, 10, num_outliers)  # не ниже 1.5 чтобы был реальный пик
+        multipliers = np.random.uniform(0, 5, num_outliers)
         df.loc[outlier_days, 'sales'] = np.round(df.loc[outlier_days, 'sales'] * multipliers).astype(int)
 
     return df
